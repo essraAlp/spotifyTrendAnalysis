@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# Model dosyaları
+*.h5
+*.keras
+*.pkl
+*.joblib
+*.hdf5
+*.pt
+*.pth
+*.onnx
+
+# KerasTuner logs
+nn_tuner_logs/
+tuner_logs/
+
+# JSON dosyaları (hyperparameter tuning)
+*.json
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Data dosyaları (isteğe bağlı - eğer büyükse)
+# *.csv
+# *.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
