@@ -5,3 +5,5 @@ scikit-learn
 optuna
 scikit-optimize
 xgboost
+pre-commit
+nbstripout
