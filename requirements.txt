@@ -2,3 +2,5 @@ seaborn
 matplotlib
 typing_extentions
 scikit-learn
+pre-commit
+nbstripout
