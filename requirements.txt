@@ -7,3 +7,4 @@ scikit-optimize
 xgboost
 pre-commit
 nbstripout
+tensorflow
