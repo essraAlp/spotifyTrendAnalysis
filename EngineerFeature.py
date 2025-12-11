@@ -9,8 +9,8 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         self.percentile_90_ = None
         self.artist_high_count_ = None
         self.artist_high_ratio_ = None
-        self.qcut_bins_ = None
-    
+        self.qcut_bins_ = None        
+        self.low_pop_artists_avg_ = None    
     def fit(self, X, y=None):
         """Train set üzerinde istatistikleri öğrenir."""
         
@@ -26,8 +26,14 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         self.artist_song_counts_ = X['artist'].value_counts().to_dict()
 
         # 2. Artist ortalama popülerlik
-        self.artist_avg_popularity_ = X.groupby('artist')['popularity'].mean().to_dict()
-
+        self.artist_avg_popularity_ = X.groupby('artist')['popularity'].mean().to_dict()        
+        # Popülerliği 0 olan artistlerin ortalama popülerliğini hesapla
+        zero_pop_artists = X[X['popularity'] == 0]['artist'].unique()
+        if len(zero_pop_artists) > 0:
+            self.low_pop_artists_avg_ = X[X['artist'].isin(zero_pop_artists)]['popularity'].mean()
+        else:
+            # Eğer hiç 0 popülerliği olan artist yoksa, global mean kullan
+            self.low_pop_artists_avg_ = X['popularity'].mean()
         # 3. 90 percentile (train’e özel)
         self.percentile_85_ = X['popularity'].quantile(0.85)
 
@@ -60,11 +66,10 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         X = X.copy()
 
         # 1. Artist şarkı sayısı
-        X['artist_song_count'] = X['artist'].map(self.artist_song_counts_).fillna(0)
+        X['artist_song_count'] = X['artist'].map(self.artist_song_counts_).fillna(1)
 
         # 2. Artist ortalama popülerlik
-        global_avg = pd.Series(self.artist_avg_popularity_).mean()
-        X['artist_avg_popularity'] = X['artist'].map(self.artist_avg_popularity_).fillna(global_avg)
+        X['artist_avg_popularity'] = X['artist'].map(self.artist_avg_popularity_).fillna(self.low_pop_artists_avg_)
 
         # 3. High popular ratio
         X['artist_high_pop_ratio'] = X['artist'].map(self.artist_high_ratio_).fillna(0)
