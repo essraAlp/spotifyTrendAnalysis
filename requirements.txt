@@ -2,5 +2,9 @@ seaborn
 matplotlib
 typing_extentions
 scikit-learn
+optuna
+scikit-optimize
+xgboost
 pre-commit
 nbstripout
+tensorflow
