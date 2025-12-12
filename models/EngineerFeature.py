@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import StandardScaler
 
 class FeatureEngineer(BaseEstimator, TransformerMixin):
     def __init__(self):
@@ -51,7 +53,6 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         quantiles = artist_song_count_series.quantile([0, 0.25, 0.5, 0.75, 1.0]).unique()
         # Unique değerleri al (duplicates varsa)
         self.qcut_bins_ = sorted(quantiles)
-
         return self
     
     def transform(self, X):
@@ -88,6 +89,6 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
             X["artist_song_count_bin"] = 0.0
 
         # 5. Artist kolonunu kaldır (modelde kullanmıyoruz)
-        X.drop(columns=['artist'], errors='ignore', inplace=True)
+        X.drop(columns=['artist', 'artist_song_count'], errors='ignore', inplace=True)
 
         return X
