@@ -4,15 +4,21 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import StandardScaler
 
 class FeatureEngineer(BaseEstimator, TransformerMixin):
-    def __init__(self):
+    def __init__(self, isMLP=False):
         # mapping’ler burada tutulacak
         self.artist_song_counts_ = None
         self.artist_avg_popularity_ = None
         self.percentile_90_ = None
         self.artist_high_count_ = None
         self.artist_high_ratio_ = None
-        self.qcut_bins_ = None        
-        self.subgenre_avg_popularity_ = None    
+        self.qcut_bins_ = None  
+        self.isMLP = False
+        # Subgenre ortalama popülerlik sadece isMLP=False için hesaplanır. 
+        # Bu nedenle, isMLP=True ise bu özelliği None yapıyoruz. MLP sadece one-hot encoded subgenre'ları kullanır.
+        if isMLP:
+            self.isMLP = True      
+        if not isMLP:
+            self.subgenre_avg_popularity_ = None
     def fit(self, X, y=None):
         """Train set üzerinde istatistikleri öğrenir."""
         
@@ -54,16 +60,17 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         # Unique değerleri al (duplicates varsa)
         self.qcut_bins_ = sorted(quantiles)
         
-        # 7. Subgenre ortalama popülerlik
-        subgenre_cols = [col for col in X.columns if col.startswith('subgenre_')]
-        self.subgenre_avg_popularity_ = {}
-        for subgenre_col in subgenre_cols:
-            # Her subgenre için, o subgenre'a sahip şarkıların ortalama popülerliğini hesapla
-            mask = X[subgenre_col] == 1
-            if mask.sum() > 0:
-                self.subgenre_avg_popularity_[subgenre_col] = X.loc[mask, 'popularity'].mean()
-            else:
-                self.subgenre_avg_popularity_[subgenre_col] = X['popularity'].mean()
+        if not self.isMLP:
+            #7. Subgenre ortalama popülerlik
+            subgenre_cols = [col for col in X.columns if col.startswith('subgenre_')]
+            self.subgenre_avg_popularity_ = {}
+            for subgenre_col in subgenre_cols:
+                # Her subgenre için, o subgenre'a sahip şarkıların ortalama popülerliğini hesapla
+                mask = X[subgenre_col] == 1
+                if mask.sum() > 0:
+                    self.subgenre_avg_popularity_[subgenre_col] = X.loc[mask, 'popularity'].mean()
+                else:
+                    self.subgenre_avg_popularity_[subgenre_col] = X['popularity'].mean()
         
         return self
     
@@ -99,24 +106,25 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         else:
             # Bin yoksa veya sadece 1 bin varsa, tüm değerleri 0 yap
             X["artist_song_count_bin"] = 0.0
-
-        # 5. Subgenre ortalama popülerlik hesapla
-        subgenre_cols = [col for col in X.columns if col.startswith('subgenre_')]
-        if subgenre_cols and self.subgenre_avg_popularity_:
-            # Her satır için, aktif subgenre'ların ortalama popülerliğini hesapla
-            def calculate_avg_subgenre_popularity(row):
-                active_subgenres = [col for col in subgenre_cols if row[col] == 1]
-                if active_subgenres:
-                    popularities = [self.subgenre_avg_popularity_.get(col, 0) for col in active_subgenres]
-                    return np.mean(popularities)
-                else:
-                    # Hiç subgenre yoksa, genel ortalamayı kullan
-                    return np.mean(list(self.subgenre_avg_popularity_.values()))
-            
-            X['avg_subgenre_popularity'] = X.apply(calculate_avg_subgenre_popularity, axis=1)
-            
-            # Subgenre kolonlarını kaldır
-            X.drop(columns=subgenre_cols, errors='ignore', inplace=True)
+        
+        if not self.isMLP:
+            # 5. Subgenre ortalama popülerlik hesapla
+            subgenre_cols = [col for col in X.columns if col.startswith('subgenre_')]
+            if subgenre_cols and self.subgenre_avg_popularity_:
+                # Her satır için, aktif subgenre'ların ortalama popülerliğini hesapla
+                def calculate_avg_subgenre_popularity(row):
+                    active_subgenres = [col for col in subgenre_cols if row[col] == 1]
+                    if active_subgenres:
+                        popularities = [self.subgenre_avg_popularity_.get(col, 0) for col in active_subgenres]
+                        return np.mean(popularities)
+                    else:
+                        # Hiç subgenre yoksa, genel ortalamayı kullan
+                        return np.mean(list(self.subgenre_avg_popularity_.values()))
+                
+                X['avg_subgenre_popularity'] = X.apply(calculate_avg_subgenre_popularity, axis=1)
+                
+                # Subgenre kolonlarını kaldır
+                X.drop(columns=subgenre_cols, errors='ignore', inplace=True)
         
         # 6. Artist kolonunu kaldır (modelde kullanmıyoruz)
         X.drop(columns=['artist', 'artist_song_count'], errors='ignore', inplace=True)
